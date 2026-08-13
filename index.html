@@ -40,6 +40,7 @@
   .card{background:var(--card); border-radius:16px; padding:16px; margin-bottom:12px;}
   .prog-name{font-size:1.15rem; font-weight:600; margin:0 0 4px;}
   .prog-meta{color:var(--muted); font-size:.85rem; margin-bottom:12px;}
+  .prog-note{color:#9fb0a8; font-size:.82rem; font-style:italic; margin:-6px 0 12px; line-height:1.4;}
   .row-btns{display:flex; gap:8px; flex-wrap:wrap;}
   .btn{padding:10px 14px; border-radius:10px; font-size:.88rem; font-weight:600; background:var(--card2); color:var(--text);}
   .btn.primary{background:var(--accent); color:#06210f;}
@@ -130,22 +131,54 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 
 function defaultData(){
   return {
-    programs:[sampleProgram()],
-    exerciseLibrary:['Jumping jacks','Squats','Pompes','Burpees','Mountain climbers','Fentes','Gainage','Corde à sauter','Montées de genoux','Dips'],
+    programs:buildKravMagaSessions(),
+    exerciseLibrary:['Jumping jacks','Squats','Pompes','Burpees','Mountain climbers','Fentes','Fentes sautées','Gainage','Corde à sauter','Montées de genoux','Dips','Abdos / crunches','Squat jumps'],
     history:[],
     settings:{voice:true, beep:true, vibration:true, hype:true, rate:1, pitch:1.15, voiceURI:null, countIn:3}
   };
 }
-function sampleProgram(){
-  return {
-    id:uid(), name:'Circuit découverte', rounds:3, warmup:30, cooldown:30, restBetweenEx:15, restBetweenRounds:60,
-    exercises:[
-      {id:uid(), name:'Jumping jacks', work:30},
-      {id:uid(), name:'Squats', work:30},
-      {id:uid(), name:'Pompes', work:30},
-      {id:uid(), name:'Gainage', work:30}
-    ]
-  };
+/* 10 séances de renfo "fin de cours" krav-maga, pas d'échauffement (déjà fait pendant le cours),
+   3-4 exercices sur 4-5 tours, ~10 min chacune, pensées comme une progression sur l'année :
+   physique (base → cardio → explosivité → résistance → combat → intensité) et mindset (rigueur →
+   gestion de l'inconfort → lucidité sous fatigue → engagement total). */
+function buildKravMagaSessions(){
+  const specs = [
+    {name:'S1 · Rentrée — Poser les bases', note:"Réathlétisation, posture, respiration. Mindset : rigueur et régularité, réapprivoiser l'effort.",
+      rounds:4, restBetweenEx:15, restBetweenRounds:30, cooldown:20,
+      exercises:[['Squats',30],['Pompes',30],['Gainage',30]]},
+    {name:'S2 · Stabilité du tronc', note:"Gainage et contrôle du buste, la base de la puissance des frappes. Mindset : qualité du geste, concentration.",
+      rounds:4, restBetweenEx:15, restBetweenRounds:25, cooldown:20,
+      exercises:[['Gainage',30],['Mountain climbers',30],['Fentes',30]]},
+    {name:"S3 · Cardio d'automne", note:"Construire l'endurance avant l'hiver. Mindset : tenir dans la durée sans lâcher.",
+      rounds:4, restBetweenEx:10, restBetweenRounds:25, cooldown:20,
+      exercises:[['Jumping jacks',25],['Squats',25],['Montées de genoux',25],['Gainage',25]]},
+    {name:'S4 · Explosivité pré-hiver', note:"Puissance et vitesse d'exécution. Mindset : sortir de sa zone de confort.",
+      rounds:5, restBetweenEx:10, restBetweenRounds:20, cooldown:20,
+      exercises:[['Squat jumps',25],['Pompes',25],['Burpees',25]]},
+    {name:'S5 · Reprise post-fêtes', note:"Remise en route sans pression. Mindset : la régularité prime sur l'intensité.",
+      rounds:4, restBetweenEx:10, restBetweenRounds:20, cooldown:20,
+      exercises:[['Squats',25],['Pompes',25],['Mountain climbers',25],['Gainage',25]]},
+    {name:'S6 · Résistance hivernale', note:"Tenir l'effort quand ça tire. Mindset : gérer l'inconfort, rester lucide.",
+      rounds:4, restBetweenEx:15, restBetweenRounds:25, cooldown:20,
+      exercises:[['Fentes sautées',35],['Gainage',35],['Abdos / crunches',35]]},
+    {name:'S7 · Cardio-combat', note:"Enchaînements rapides façon situation réelle. Mindset : décision sous fatigue, lucidité.",
+      rounds:5, restBetweenEx:10, restBetweenRounds:15, cooldown:20,
+      exercises:[['Burpees',20],['Squat jumps',20],['Montées de genoux',20],['Mountain climbers',20]]},
+    {name:'S8 · Force transférée', note:"Jambes + tronc = puissance des projections et percussions. Mindset : transformer la force en efficacité.",
+      rounds:4, restBetweenEx:10, restBetweenRounds:20, cooldown:20,
+      exercises:[['Squats',25],['Pompes',25],['Fentes sautées',25],['Gainage',25]]},
+    {name:'S9 · Intensité de printemps', note:"Le corps est prêt, on pousse. Mindset : engagement total.",
+      rounds:5, restBetweenEx:10, restBetweenRounds:20, cooldown:20,
+      exercises:[['Burpees',30],['Squats',30],['Mountain climbers',30]]},
+    {name:'S10 · Affûtage estival', note:"Séance courte et dense pour clôturer l'année. Mindset : plaisir et fierté du chemin parcouru.",
+      rounds:5, restBetweenEx:10, restBetweenRounds:15, cooldown:20,
+      exercises:[['Squat jumps',20],['Gainage',20],['Abdos / crunches',20],['Pompes',20]]}
+  ];
+  return specs.map(s=>({
+    id:uid(), name:s.name, note:s.note, rounds:s.rounds, warmup:0, cooldown:s.cooldown,
+    restBetweenEx:s.restBetweenEx, restBetweenRounds:s.restBetweenRounds,
+    exercises:s.exercises.map(pair=>({id:uid(), name:pair[0], work:pair[1]}))
+  }));
 }
 
 function loadData(){
@@ -428,7 +461,7 @@ function openEditor(programId){
     const p = data.programs.find(p=>p.id===programId);
     editing = JSON.parse(JSON.stringify(p));
   } else {
-    editing = {id:null, name:'Nouveau programme', warmup:15, cooldown:15, rounds:3, restBetweenEx:15, restBetweenRounds:60, exercises:[]};
+    editing = {id:null, name:'Nouveau programme', note:'', warmup:15, cooldown:15, rounds:3, restBetweenEx:15, restBetweenRounds:60, exercises:[]};
   }
   view='editor'; render();
 }
@@ -528,11 +561,11 @@ function importDataFile(evt){
 }
 /* ============================= PARTAGE D'UN PROGRAMME (lien) ============================= */
 function programToCompact(p){
-  return {n:p.name, r:p.rounds, w:p.warmup, c:p.cooldown, re:p.restBetweenEx, rr:p.restBetweenRounds,
+  return {n:p.name, nt:p.note||'', r:p.rounds, w:p.warmup, c:p.cooldown, re:p.restBetweenEx, rr:p.restBetweenRounds,
     ex:p.exercises.map(e=>[e.name, e.work])};
 }
 function compactToProgram(c){
-  return {id:uid(), name:c.n||'Programme partagé', rounds:c.r||1, warmup:c.w||0, cooldown:c.c||0,
+  return {id:uid(), name:c.n||'Programme partagé', note:c.nt||'', rounds:c.r||1, warmup:c.w||0, cooldown:c.c||0,
     restBetweenEx:c.re||0, restBetweenRounds:c.rr||0,
     exercises:(c.ex||[]).map(pair=>({id:uid(), name:pair[0], work:pair[1]}))};
 }
@@ -598,6 +631,7 @@ function renderImportPreview(){
       <div class="card">
         <div class="prog-name">${escapeHtml(c.n||'Programme')}</div>
         <div class="prog-meta">${(c.ex||[]).length} exercice(s) · ${c.r||1} round(s)</div>
+        ${c.nt ? `<div class="prog-note">${escapeHtml(c.nt)}</div>` : ''}
         ${exList}
       </div>
       <div class="row-btns" style="margin-top:14px;">
@@ -656,6 +690,7 @@ function renderHome(){
       html += `<div class="card">
         <div class="prog-name">${escapeHtml(p.name)}</div>
         <div class="prog-meta">${p.exercises.length} exercice${p.exercises.length>1?'s':''} · ${p.rounds} round${p.rounds>1?'s':''} · ~${formatTime(dur)}</div>
+        ${p.note ? `<div class="prog-note">${escapeHtml(p.note)}</div>` : ''}
         <div class="row-btns">
           <button class="btn primary" onclick="startPlayer('${p.id}')">▶ Lancer</button>
           <button class="btn" onclick="openEditor('${p.id}')">✎ Modifier</button>
@@ -700,6 +735,10 @@ function renderEditor(){
       <div class="field">
         <label>Nom du programme</label>
         <input type="text" value="${escapeHtml(e.name)}" oninput="setField('name', this.value, false)">
+      </div>
+      <div class="field">
+        <label>Note (focus physique / mindset — facultatif)</label>
+        <input type="text" value="${escapeHtml(e.note||'')}" placeholder="Ex : gainage & explosivité — gérer l'inconfort" oninput="setField('note', this.value, false)">
       </div>
 
       <div class="presets">
