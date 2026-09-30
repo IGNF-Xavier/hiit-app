@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hiit-cache-v2';
+const CACHE_NAME = 'hiit-cache-v3';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {

@@ -162,7 +162,7 @@ function defaultData(){
     programs:buildKravMagaSessions(),
     exerciseLibrary:['Jumping jacks','Squats','Pompes','Burpees','Mountain climbers','Fentes','Fentes sautées','Gainage','Corde à sauter','Montées de genoux','Dips','Abdos / crunches','Squat jumps'],
     history:[],
-    settings:{voice:true, beep:true, vibration:true, hype:true, rate:1, pitch:1.15, voiceURI:null, countIn:3}
+    settings:{voice:true, beep:true, vibration:true, hype:true, rate:1, pitch:1.15, voiceURI:null, countIn:3, prepTime:5}
   };
 }
 /* 10 séances de renfo "fin de cours" krav-maga, pas d'échauffement (déjà fait pendant le cours),
@@ -279,7 +279,7 @@ const PHRASES_FINISH = [
 
 function buildSteps(program){
   const steps=[];
-  if(program.exercises.length>0) steps.push({type:'prep', name:'Prépare-toi', sec:5, nextName:program.exercises[0].name});
+  if(program.exercises.length>0 && data.settings.prepTime>0) steps.push({type:'prep', name:'Prépare-toi', sec:data.settings.prepTime, nextName:program.exercises[0].name});
   if(program.warmup>0) steps.push({type:'warmup', name:'Échauffement', sec:program.warmup});
   const exs = program.exercises;
   if(exs.length>0){
@@ -1002,6 +1002,10 @@ function renderSettings(){
         <div class="field">
           <label>Décompte sonore (dernières secondes)</label>
           <input type="number" min="1" max="5" value="${s.countIn}" oninput="setSettingNum('countIn', this.value)">
+        </div>
+        <div class="field">
+          <label>Temps de préparation avant le départ (s, 0 = aucun)</label>
+          <input type="number" min="0" max="60" value="${s.prepTime}" oninput="setSettingNum('prepTime', Math.min(60,Math.max(0,parseInt(this.value)||0)))">
         </div>
         <button class="btn primary" style="width:100%;" onclick="testVoice()">🔊 Tester la voix</button>
       </div>
