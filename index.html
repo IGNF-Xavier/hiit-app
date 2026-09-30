@@ -50,6 +50,33 @@
     padding:16px 20px; border-radius:30px; box-shadow:0 6px 20px rgba(0,0,0,.4); font-size:1rem; z-index:5;}
   .empty{color:var(--muted); text-align:center; padding:60px 20px; line-height:1.5;}
 
+  .card.tappable{cursor:pointer;}
+  .card.tappable:active{background:var(--card2);}
+  .chev{float:right;color:var(--muted);font-size:1.3rem;line-height:1;}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;}
+  .chip{padding:6px 11px; border-radius:16px; background:var(--card2); color:var(--text); font-size:.8rem; font-weight:600;}
+
+  /* ---------- Detail / aperçu ---------- */
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px;}
+  .stat{background:var(--card2); border-radius:12px; padding:10px 6px; text-align:center;}
+  .stat b{display:block; font-size:1.25rem;}
+  .stat span{color:var(--muted); font-size:.72rem;}
+  .ex-item{display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #1c2530;}
+  .ex-item:last-child{border-bottom:none;}
+  .ex-num{width:30px; height:30px; border-radius:50%; background:var(--accent); color:#06210f; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:.9rem;}
+  .ex-item .nm{flex:1; font-size:1.02rem; font-weight:600;}
+  .ex-item .du{color:var(--accent); font-weight:700;}
+  .tl-row{display:flex; justify-content:space-between; padding:7px 0; font-size:.88rem; border-bottom:1px solid #1c2530;}
+  .tl-row.rest{color:var(--warn);}
+  .tl-row.round{font-weight:700; color:var(--muted); text-transform:uppercase; font-size:.75rem; letter-spacing:.5px; padding-top:14px;}
+  details.tl summary{cursor:pointer; font-weight:600; padding:4px 0; list-style:none;}
+  details.tl summary::-webkit-details-marker{display:none;}
+  details.tl summary::before{content:'▸ ';}
+  details.tl[open] summary::before{content:'▾ ';}
+  .detail-actions{position:sticky; bottom:0; background:linear-gradient(0deg,var(--bg) 60%,transparent); padding:14px 0 calc(6px + var(--safe-b)); display:flex; gap:10px;}
+  .detail-actions .btn{padding:14px;}
+  .detail-actions .btn.primary{flex:1; font-size:1rem;}
+
   /* ---------- Editor ---------- */
   .field{margin-bottom:14px;}
   .field label{display:block; font-size:.8rem; color:var(--muted); margin-bottom:6px;}
@@ -77,7 +104,7 @@
   /* ---------- Player ---------- */
   .player{position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between;
     padding:calc(14px + var(--safe-t)) 20px calc(20px + var(--safe-b)); transition:background 1s ease; z-index:20;}
-  .phase-warmup{background:linear-gradient(160deg,#0f2557,#1d4ed8);}
+  .phase-warmup,.phase-prep{background:linear-gradient(160deg,#0f2557,#1d4ed8);}
   .phase-work{background:linear-gradient(160deg,#0a3a1f,#16a34a);}
   .phase-rest{background:linear-gradient(160deg,#4a2e05,#f59e0b);}
   .phase-cooldown{background:linear-gradient(160deg,#2e1065,#7c3aed);}
@@ -85,6 +112,7 @@
   .player .icon-btn{background:rgba(255,255,255,.15); color:#fff;}
   .step-index{color:rgba(255,255,255,.75); font-size:.85rem; font-weight:600;}
   .phase-label{color:rgba(255,255,255,.85); font-size:1rem; font-weight:700; letter-spacing:2px; margin-top:6px;}
+  .next-up{color:rgba(255,255,255,.9); background:rgba(0,0,0,.22); border-radius:12px; padding:8px 14px; font-size:.95rem; margin-top:10px; text-align:center; max-width:92%;}
   .ex-name{color:#fff; font-size:clamp(1.6rem,7vw,2.6rem); font-weight:800; text-align:center; margin:6px 0; line-height:1.15; max-width:92%;}
   .timer{color:#fff; font-size:clamp(5rem,28vw,10rem); font-weight:800; line-height:1; font-variant-numeric:tabular-nums;}
   .subtitle{color:rgba(255,255,255,.85); font-size:1rem; min-height:1.4em; text-align:center;}
@@ -195,6 +223,7 @@ function saveData(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)
 let data = loadData();
 let view = 'home';
 let editing = null;
+let detailId = null;
 let player = null;
 let playerLoopId = null;
 let lastSessionDuration = 0;
@@ -250,12 +279,14 @@ const PHRASES_FINISH = [
 
 function buildSteps(program){
   const steps=[];
+  if(program.exercises.length>0) steps.push({type:'prep', name:'Prépare-toi', sec:5, nextName:program.exercises[0].name});
   if(program.warmup>0) steps.push({type:'warmup', name:'Échauffement', sec:program.warmup});
   const exs = program.exercises;
   if(exs.length>0){
     for(let r=1; r<=program.rounds; r++){
       for(let i=0; i<exs.length; i++){
-        steps.push({type:'work', name:exs[i].name, sec:Math.max(1,exs[i].work), round:r, totalRounds:program.rounds, exIndex:i, totalEx:exs.length});
+        steps.push({type:'work', name:exs[i].name, sec:Math.max(1,exs[i].work), round:r, totalRounds:program.rounds, exIndex:i, totalEx:exs.length,
+          nextName: i<exs.length-1 ? exs[i+1].name : (r<program.rounds ? exs[0].name : null)});
         const isLastEx = i===exs.length-1;
         if(!isLastEx && program.restBetweenEx>0){
           steps.push({type:'rest', name:'Repos', sec:program.restBetweenEx, nextName:exs[i+1].name});
@@ -362,7 +393,8 @@ function advanceStep(){
 }
 function announceStep(step){
   let text='';
-  if(step.type==='warmup') text='Échauffement, prépare-toi !';
+  if(step.type==='prep') text='Prépare-toi. Premier exercice : '+step.nextName+'.';
+  else if(step.type==='warmup') text='Échauffement, prépare-toi !';
   else if(step.type==='cooldown') text='Retour au calme, respire.';
   else if(step.type==='work') text = pick(PHRASES_WORK_START)(step.name);
   else if(step.type==='rest'){
@@ -465,6 +497,10 @@ function openEditor(programId){
   }
   view='editor'; render();
 }
+function closeEditor(){
+  const back = detailId && editing && editing.id===detailId ? 'detail' : 'home';
+  editing=null; view=back; render();
+}
 function saveEditor(){
   if(!editing.name || !editing.name.trim()) editing.name='Programme sans nom';
   if(!editing.exercises.length){ alert('Ajoute au moins un exercice avant d\'enregistrer.'); return; }
@@ -477,12 +513,12 @@ function saveEditor(){
     data.programs.push(editing);
   }
   saveData();
-  editing=null; view='home'; render();
+  closeEditor();
 }
 function deleteProgram(id){
   if(confirm('Supprimer ce programme ?')){
     data.programs = data.programs.filter(p=>p.id!==id);
-    saveData(); render();
+    saveData(); view='home'; render();
   }
 }
 function duplicateProgram(id){
@@ -491,7 +527,7 @@ function duplicateProgram(id){
   copy.id = uid(); copy.name = p.name+' (copie)';
   copy.exercises.forEach(e=>e.id=uid());
   data.programs.push(copy);
-  saveData(); render();
+  saveData(); view='home'; render();
 }
 function addExerciseFromInput(){
   const inp = document.getElementById('newExName');
@@ -653,6 +689,7 @@ function testVoice(){ speak(pick(PHRASES_WORK_START)('Squats')); }
 function render(){
   const app = document.getElementById('app');
   if(view==='home') return renderHome();
+  if(view==='detail') return renderDetail();
   if(view==='editor') return renderEditor();
   if(view==='player') return renderPlayerFull();
   if(view==='summary') return renderSummary();
@@ -687,22 +724,74 @@ function renderHome(){
   } else {
     data.programs.forEach(p=>{
       const dur = totalDuration(p);
-      html += `<div class="card">
-        <div class="prog-name">${escapeHtml(p.name)}</div>
+      html += `<div class="card tappable" onclick="openDetail('${p.id}')">
+        <div class="prog-name">${escapeHtml(p.name)}<span class="chev">›</span></div>
         <div class="prog-meta">${p.exercises.length} exercice${p.exercises.length>1?'s':''} · ${p.rounds} round${p.rounds>1?'s':''} · ~${formatTime(dur)}</div>
         ${p.note ? `<div class="prog-note">${escapeHtml(p.note)}</div>` : ''}
-        <div class="row-btns">
-          <button class="btn primary" onclick="startPlayer('${p.id}')">▶ Lancer</button>
-          <button class="btn" onclick="openEditor('${p.id}')">✎ Modifier</button>
-          <button class="btn" onclick="duplicateProgram('${p.id}')">⧉ Dupliquer</button>
-          <button class="btn" onclick="shareProgram('${p.id}')">🔗 Partager</button>
-          <button class="btn danger" onclick="deleteProgram('${p.id}')">🗑</button>
+        <div class="chips">${exChips(p)}</div>
+        <div class="row-btns" style="margin-top:10px;" onclick="event.stopPropagation()">
+          <button class="btn primary" onclick="openDetail('${p.id}')">👁 Voir</button>
+          <button class="btn" onclick="startPlayer('${p.id}')">▶ Lancer</button>
         </div>
       </div>`;
     });
   }
   html += `</div><button class="fab" onclick="openEditor(null)">+ Nouveau programme</button>`;
   app.innerHTML = html;
+}
+
+function exChips(p){
+  return p.exercises.map(e=>`<span class="chip">${escapeHtml(e.name)} · ${e.work}s</span>`).join('');
+}
+function openDetail(id){ detailId=id; view='detail'; render(); window.scrollTo(0,0); }
+function renderDetail(){
+  const app = document.getElementById('app');
+  const p = data.programs.find(p=>p.id===detailId);
+  if(!p){ view='home'; return renderHome(); }
+  const dur = totalDuration(p);
+  const exs = p.exercises;
+  const exItems = exs.map((e,i)=>`<div class="ex-item"><div class="ex-num">${i+1}</div><div class="nm">${escapeHtml(e.name)}</div><div class="du">${e.work}s</div></div>`).join('');
+  let tl='', lastRound=0;
+  buildSteps(p).forEach(st=>{
+    if(st.type==='prep') return;
+    if(st.type==='work' && st.round!==lastRound){ lastRound=st.round; tl+=`<div class="tl-row round"><span>Round ${st.round}/${st.totalRounds}</span></div>`; }
+    const cls = st.type==='work' ? '' : 'rest';
+    tl+=`<div class="tl-row ${cls}"><span>${escapeHtml(st.name)}</span><span>${st.sec}s</span></div>`;
+  });
+  const extra=[];
+  if(p.restBetweenEx>0 && exs.length>1) extra.push(p.restBetweenEx+'s de repos entre exercices');
+  if(p.restBetweenRounds>0 && p.rounds>1) extra.push(p.restBetweenRounds+'s entre rounds');
+  if(p.warmup>0) extra.push('échauffement '+p.warmup+'s');
+  if(p.cooldown>0) extra.push('retour au calme '+p.cooldown+'s');
+  app.innerHTML = `
+    <div class="topbar">
+      <button class="icon-btn" onclick="view='home';render()">←</button>
+      <h1 style="font-size:1.1rem;">Aperçu</h1>
+      <button class="icon-btn" onclick="openEditor('${p.id}')" title="Modifier">✎</button>
+    </div>
+    <div class="content">
+      <div class="card">
+        <div class="prog-name">${escapeHtml(p.name)}</div>
+        ${p.note ? `<div class="prog-note" style="margin-top:6px;">${escapeHtml(p.note)}</div>` : ''}
+        <div class="stats">
+          <div class="stat"><b>${exs.length}</b><span>exercice${exs.length>1?'s':''}</span></div>
+          <div class="stat"><b>${p.rounds}</b><span>round${p.rounds>1?'s':''}</span></div>
+          <div class="stat"><b>~${formatTime(dur)}</b><span>durée</span></div>
+        </div>
+        ${extra.length?`<div class="total-line">${extra.join(' · ')}</div>`:''}
+      </div>
+      <div class="section-title" style="margin-top:8px;">Circuit (× ${p.rounds})</div>
+      <div class="card">${exItems}</div>
+      <div class="card"><details class="tl"><summary>Déroulé complet de la séance</summary>${tl}</details></div>
+      <div class="row-btns">
+        <button class="btn" onclick="duplicateProgram('${p.id}')">⧉ Dupliquer</button>
+        <button class="btn" onclick="shareProgram('${p.id}')">🔗 Partager</button>
+        <button class="btn danger" onclick="deleteProgram('${p.id}')">🗑 Supprimer</button>
+      </div>
+      <div class="detail-actions">
+        <button class="btn primary" onclick="startPlayer('${p.id}')">▶ Lancer la séance</button>
+      </div>
+    </div>`;
 }
 
 function renderEditor(){
@@ -727,7 +816,7 @@ function renderEditor(){
 
   app.innerHTML = `
     <div class="topbar">
-      <button class="icon-btn" onclick="editing=null;view='home';render()">←</button>
+      <button class="icon-btn" onclick="closeEditor()">←</button>
       <h1 style="font-size:1.1rem;">${e.id?'Modifier':'Nouveau'} programme</h1>
       <div style="width:42px;"></div>
     </div>
@@ -769,7 +858,7 @@ function renderEditor(){
       <div class="total-line" id="totalsLine">Durée totale estimée : ${formatTime(dur)}</div>
 
       <div class="editor-actions">
-        <button class="btn" onclick="editing=null;view='home';render()">Annuler</button>
+        <button class="btn" onclick="closeEditor()">Annuler</button>
         <button class="btn primary" onclick="saveEditor()">Enregistrer</button>
       </div>
     </div>`;
@@ -779,7 +868,7 @@ function renderTotalsOnly(){
   if(el && editing) el.textContent = 'Durée totale estimée : '+formatTime(totalDuration(editing));
 }
 
-function phaseLabel(type){ return {warmup:'ÉCHAUFFEMENT', work:'EXERCICE', rest:'REPOS', cooldown:'RETOUR AU CALME'}[type] || ''; }
+function phaseLabel(type){ return {prep:'PRÊT ?', warmup:'ÉCHAUFFEMENT', work:'EXERCICE', rest:'REPOS', cooldown:'RETOUR AU CALME'}[type] || ''; }
 
 function renderPlayerFull(){
   const app = document.getElementById('app');
@@ -788,6 +877,10 @@ function renderPlayerFull(){
   let subtitle='';
   if(step.type==='work') subtitle = 'Exercice '+(step.exIndex+1)+'/'+step.totalEx+' · Round '+step.round+'/'+step.totalRounds;
   else if(step.type==='rest') subtitle = step.nextName ? ('Ensuite : '+step.nextName) : 'Repos';
+  else if(step.type==='prep') subtitle = 'Premier exercice : '+step.nextName;
+  let nextUp='';
+  if(step.type==='work' && step.nextName) nextUp = 'Suivant : <b>'+escapeHtml(step.nextName)+'</b>';
+  else if(step.type==='work') nextUp = 'Dernier exercice 💪';
   app.innerHTML = `
     <div class="player phase-${step.type}">
       <div class="player-top">
@@ -798,6 +891,7 @@ function renderPlayerFull(){
       <div style="display:flex;flex-direction:column;align-items:center;">
         <div class="phase-label">${phaseLabel(step.type)}</div>
         <div class="ex-name">${escapeHtml(step.name)}</div>
+        ${nextUp?`<div class="next-up">${nextUp}</div>`:''}
       </div>
       <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
         <div class="timer" id="timerText">${Math.ceil(remaining)}</div>
